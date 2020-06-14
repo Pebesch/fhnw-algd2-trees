@@ -39,7 +39,18 @@ public class AVL_tree{
 
     public boolean insert(int key){
         // TODO : assignment 5.3
-        return false;
+        Node root = m_root.R;
+        while (root != null) {
+            root.U = root;
+            if(key >= root.L.key) {
+                root = root.R;
+            } else {
+                root = root.L;
+            }
+        }
+        root = new Node(key);
+        root.bal = 0;
+        return true;
     }
 
     public boolean remove(int key){
@@ -128,19 +139,58 @@ public class AVL_tree{
     // search removal-substitute for node p
     private SearchResult searchNearestSmaller(Node p){
         // TODO : assignment 5.2
-        return null;
+        p = p.L;
+        boolean left = true;
+        while(p.L != null || p.R!= null) {
+            if(p.R != null) {
+                p = p.R;
+                left = false;
+            } else {
+                p = p.L;
+                left = true;
+            }
+        }
+        return new SearchResult(p.U, p, left);
     }
 
 
     // trying to raise an empty sub-tree will cause a nullpointer exception
     private void rotateRight(Node p){
         // TODO : assignment 5.2
+        /**
+         *   c
+         *  b
+         * a
+         * - b becomes new root
+         * - c takes ownership of b's right child as left
+         * - b takes ownership of c as it's right child
+         *  b
+         * a c
+         */
+        if(p.bal <= -2 && (p.L.bal == 1 || p.L.bal == -1) || ((p.R.bal == 1 || p.R.bal == -1))) {
+            p.U = p.L; // b becomes new root
+            p.L = p.L.R; // c takes ownership of b's right child as left
+            p.L.R = p; // b takes ownership of c as it's right child
+        }
     }
 
 
     // trying to raise an empty sub-tree will cause a nullpointer exception
     private void rotateLeft(Node p){
+        /**
+         * a
+         *  b
+         *    c
+         * - b becomes new root
+         * - a takes ownership of b's left child as it's right child
+         * - b takes ownership of a as it's left child
+         *  b
+         * a c
+         */
         // TODO : assignment 5.2
+        p.U = p.R; // b becomes new root
+        p.R = p.R.L; // a takes ownership of b's left child as it's right child
+        p.R.L = p; // b takes ownership of a as it's left child
     }
 
 
