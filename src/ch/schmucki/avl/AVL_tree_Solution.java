@@ -1,22 +1,25 @@
 package ch.schmucki.avl;
 
+
 //******************************************************************************
 //  FHNW.ALGD2  -  Excercise 5 : AVL Trees                                     *
-// --------------------------------------------------------------------------- *
-//  vorgegebene Elemente                                                       *
+// --------------------------------------------------------------------------  *
+//  version 1                                                             vtg  *
+//  version 2                                                                  *
 //******************************************************************************
 
+//
 
-public class AVL_tree{
+public class AVL_tree_Solution{
 
 // ***** API *******************************************************************
 
-    public AVL_tree(){
+    public AVL_tree_Solution(){
         m_root.R = null;
         m_root.U = m_root;
     }
 
-    public AVL_tree(int[] sorted){
+    public AVL_tree_Solution(int[] sorted){
         this();
         m_root.R = buildTree(sorted, 0, sorted.length - 1, m_root);
         updateBalances(m_root.R);
@@ -38,29 +41,24 @@ public class AVL_tree{
     }
 
     public boolean insert(int key){
-        // TODO : assignment 5.3
         SearchResult r = find(key);
-        if(r.node != null) {
-            // existiert bereits
+        if (r.node != null)
             return false;
-        }
-        if(r.isLeftChild) {
+        if (r.isLeftChild){
             r.parent.L = new Node(key);
             r.parent.L.bal = 0;
             r.parent.L.U = r.parent;
-            r.parent.bal--;
-        } else {
+            --r.parent.bal;
+        } else{
             r.parent.R = new Node(key);
             r.parent.R.bal = 0;
             r.parent.R.U = r.parent;
-            r.parent.bal++;
+            ++r.parent.bal;
         }
         if (r.parent.bal != 0)
             updateIn(r.parent);
         return true;
     }
-
-
 
     public boolean remove(int key){
         return remove(key, null);
@@ -140,18 +138,45 @@ public class AVL_tree{
 
     // removes node using optimized search, if starting node is known (pointed by r)
     private boolean remove(int key, SearchResult r){
-        // TODO : assignment 5.4
-        return false;
+        if (r == null)
+            r = find(key);
+        if (r.node == null)
+            return false;
+        if (r.node.L == null && r.node.R == null){        // case 1 : node has no children
+            if (r.isLeftChild){
+                r.parent.L = null;
+                ++r.parent.bal;
+            } else{
+                r.parent.R = null;
+                --r.parent.bal;
+            }
+            if (r.parent.bal * r.parent.bal != 1){          // parent.bal changed to 0 or 2
+                updateOut(r.parent);
+            }
+        }else if (r.node.L == null || r.node.R == null){  // case 2 : node has 1 child
+            if (r.node.L != null){
+                r.node.key = r.node.L.key;
+                r.node.L = null;
+            } else{
+                r.node.key = r.node.R.key;
+                r.node.R = null;
+            }
+            r.node.bal = 0;
+            updateOut(r.node);
+        }else{                                            // case 3 : node has 2 children
+            Node n = r.node;
+            r = searchNearestSmaller(r.node);
+            n.key = r.node.key;
+            remove(0, r);
+        }
+        return true;
     }
 
 
     // search removal-substitute for node p
     private SearchResult searchNearestSmaller(Node p){
-        // TODO : assignment 5.2
-        // Node is at least l of current node
         SearchResult s = new SearchResult(p, p.L, true);
-        while (s.node.R != null) {
-            // while we can go r
+        while (s.node.R != null){
             s.parent = s.node;
             s.node = s.node.R;
             s.isLeftChild = false;
@@ -159,91 +184,131 @@ public class AVL_tree{
         return s;
     }
 
+
     // trying to raise an empty sub-tree will cause a nullpointer exception
     private void rotateRight(Node p){
-        // TODO : assignment 5.2
-        /**
-         *   c
-         *  b
-         * a
-         * - b becomes new root
-         * - c takes ownership of b's right child as left
-         * - b takes ownership of c as it's right child
-         *  b
-         * a c
-         */
-        Node newRoot = p.L;
-        int bal = newRoot.bal;
-        if(p.U.L == p) {
-            // Case we are working on the root
-            p.U.L = newRoot;
-        } else {
-            p.U.R = newRoot; // b becomes new root
-            p.L = newRoot.R; // c takes ownership of b's right child as left
-            newRoot.R = p; // b takes ownership of c as it's right child
-            p.U = newRoot; // b becomes c's parent
-        }
-        if(p.L != null) {
+        Node s = p.L;
+        int bal = s.bal;    // save old balance
+        if (p.U.L == p)
+            p.U.L = s;
+        else
+            p.U.R = s;
+        p.L = s.R;
+        s.R = p;
+        s.U = p.U;
+        p.U = s;
+        if (p.L != null)
             p.L.U = p;
-        }
-        p.bal = newRoot.bal = 0;
-        if(bal == 0) {
+        p.bal = s.bal = 0;  // update balances
+        if (bal==0){
             p.bal = -1;
-            newRoot.bal = 1;
+            s.bal =  1;
         }
     }
 
+
     // trying to raise an empty sub-tree will cause a nullpointer exception
     private void rotateLeft(Node p){
-        /**
-         * a
-         *  b
-         *    c
-         * - b becomes new root
-         * - a takes ownership of b's left child as it's right child
-         * - b takes ownership of a as it's left child
-         *  b
-         * a c
-         */
-        // TODO : assignment 5.2
-        Node newRoot = p.R;
-        int bal = newRoot.bal;
-        if(p.U.R == p) {
-            p.U.R = newRoot;
-        } else {
-            p.U.L = newRoot; // b becomes new root
-            p.R = newRoot.L; // a takes ownership of b's left child as it's right child
-            newRoot.L = p; // a takes ownership of b's left child as it's right child
-            p.U = newRoot; // b becomes a's parent
-        }
-        if(p.R != null) {
+        Node s = p.R;
+        int bal = s.bal;    // save old balance
+        if (p.U.L == p)
+            p.U.L = s;
+        else
+            p.U.R = s;
+        p.R = s.L;
+        s.L = p;
+        s.U = p.U;
+        p.U = s;
+        if (p.R != null)
             p.R.U = p;
-        }
-        p.bal = newRoot.bal = 0;
-        if(bal == 0) {
-            p.bal = 1;
-            newRoot.bal = -1;
+        p.bal = s.bal = 0;  // update balances
+        if (bal==0){
+            p.bal =  1;
+            s.bal = -1;
         }
     }
 
 
     private void updateIn(Node p){
-        // TODO : assignment 5.3
-        // Call this method if p did not have children before that
-        if(p.bal >= 2) {
-            // left rotation
-        } else if (p.bal <= -2) {
-            // right rotation
-        } else if (p.bal == Math.abs(1)){
-            // Call to parent
-            updateIn(p.U);
+        Node f;
+        while (p.U.U != p.U){ // while p is not root
+            f = p.U;
+            f.bal += (f.L == p  ?  -1  :  1);  // update parent's balance
+            if (f.bal == 0){
+                return;
+            } else if (f.bal * f.bal == 1){ // -1 or +1
+                p = f;        // cycle up with p's parent
+            } else{         // severe inbalance : rotate
+                if (f.bal < 0){
+                    if (p.bal > 0){
+                        Node r = p.R;
+                        int bal = p.R.bal;
+                        rotateLeft(p);
+                        rotateRight(f);
+                        f.bal = p.bal = r.bal = 0;
+                        if (bal==1)      p.bal = -1;
+                        else if(bal==-1) f.bal = 1;
+                    }else{
+                        rotateRight(f);
+                    }
+                }else{
+                    if (p.bal < 0){
+                        Node l = p.L;
+                        int bal = p.L.bal;
+                        rotateRight(p);
+                        rotateLeft(f);
+                        f.bal = p.bal = l.bal = 0;
+                        if (bal==1)      f.bal = -1;
+                        else if(bal==-1) p.bal = 1;
+                    }else{
+                        rotateLeft(f);
+                    }
+                }
+                return;
+            }
         }
-        // Case bal = 0 does not change anything
     }
 
 
     private void updateOut(Node p){
-        // TODO : assignment 5.4
+        while (p.U != p){
+            Node f = p.U;
+            if (p.bal == 0){ //****************************** height of tree(p) diminished by 1
+                f.bal += (f.L == p  ?  1  :  -1);  // update parent's balance
+                p = f;
+            }else if (p.bal * p.bal == 1){ //**************** no change of height: terminate
+                return;
+            }else{ //**************************************** severe inbalance : rotate
+                if (p.bal < 0){
+                    if (p.L.bal > 0){               // double rotate LR
+                        Node lr = p.L.R;
+                        Node l = p.L;
+                        int bal = lr.bal;
+                        rotateLeft(p.L);
+                        rotateRight(p);
+                        p.bal = l.bal = lr.bal = 0;
+                        if (bal==1)      l.bal = -1;
+                        else if(bal==-1) p.bal = 1;
+                    }else{                          // rotate R
+                        rotateRight(p);
+                    }
+                }else{
+                    if (p.R.bal < 0){               // double rotate RL
+                        Node rl = p.R.L;
+                        Node r = p.R;
+                        int bal = rl.bal;
+                        rotateRight(p.R);
+                        rotateLeft(p);
+                        p.bal = r.bal = rl.bal = 0;
+                        if (bal==1)      p.bal = -1;
+                        else if(bal==-1) r.bal = 1;
+                    }else{                          // rotate L
+                        rotateLeft(p);
+                    }
+                }
+                p = p.U;
+            }
+        }
     }
 
 
@@ -255,7 +320,6 @@ public class AVL_tree{
             return 1 + Math.max(getDepth(root.L), getDepth(root.R));
         }
     }
-
 
     //check balance of a certain node : for testing issues only
     private boolean balanceInfoIsCorrect (Node node){
@@ -297,5 +361,6 @@ public class AVL_tree{
     }
 
 }
+
 
 
