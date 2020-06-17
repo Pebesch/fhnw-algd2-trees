@@ -172,6 +172,7 @@ public class AVL_tree{
             // delete p, p's son will take it's place, bal p' = 0
             //update out(p')
             r.node = r.node.L != null ? r.node.L : r.node.R;
+            r.node.bal = 0;
             updateOut(r.node);
         }
         return true;
@@ -310,6 +311,11 @@ public class AVL_tree{
 
     private void updateOut(Node p){
         // TODO : assignment 5.4
+        Node f;
+        while (p.U.U != p.U) {
+            f = p.U;
+
+        }
     }
 
 
