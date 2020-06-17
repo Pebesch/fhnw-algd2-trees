@@ -140,8 +140,41 @@ public class AVL_tree{
 
     // removes node using optimized search, if starting node is known (pointed by r)
     private boolean remove(int key, SearchResult r){
+        if(r == null) {
+            r = find(key);
+        }
         // TODO : assignment 5.4
-        return false;
+        if(r.node.L == null && r.node.R == null) {
+            // p has no children
+            // delete p
+            // p was left son > f.bal +1, p was right son f.bal -1
+            // |f.bal| = 2 > update out(f)
+            r.node = null;
+            if(r.isLeftChild) {
+                r.parent.L = null;
+                r.parent.bal += 1;
+            } else {
+                r.parent.R = null;
+                r.parent.bal -= 1;
+            }
+            if(Math.abs(r.parent.bal) == 2) {
+                updateOut(r.parent);
+            }
+        } else if(r.node.L != null && r.node.R != null) {
+            // p has two children
+            // searchNearest smallest r
+            // replace p with r and call delete(r)
+            SearchResult ns = searchNearestSmaller(r.node);
+            r.node = ns.node;
+            remove(0, r);
+        } else {
+            // p has one child
+            // delete p, p's son will take it's place, bal p' = 0
+            //update out(p')
+            r.node = r.node.L != null ? r.node.L : r.node.R;
+            updateOut(r.node);
+        }
+        return true;
     }
 
 
@@ -230,15 +263,48 @@ public class AVL_tree{
     private void updateIn(Node p){
         // TODO : assignment 5.3
         // Call this method if p did not have children before that
-        if(p.bal >= 2) {
-            // left rotation
-        } else if (p.bal <= -2) {
-            // right rotation
-        } else if (p.bal == Math.abs(1)){
-            // Call to parent
-            updateIn(p.U);
+        Node f; // father
+        while (p.U.U != p.U) {
+            f = p.U; // Father is one up
+            f.bal += (f.L == p ? -1 : 1); // Update parents balance
+            if(p.bal == 0) {
+                return; // Balance is zero, no problem
+            } else if(f.bal * f.bal == 1) {
+                p = f;
+            } else {
+                if(f.bal > 0) {
+                    // at least left rotate
+                    if(p.bal < 0) {
+                        // right left rotate
+                        Node l = p.L;
+                        int bal = p.L.bal;
+                        rotateRight(p);
+                        rotateLeft(f);
+                        f.bal = p.bal = l.bal = 0;
+                        if(bal == 1) f.bal = -1;
+                        else if (bal == -1) p.bal = -1;
+                    } else {
+                        rotateLeft(f);
+                    }
+                } else {
+                    // at least right rotate
+                    if(p.bal > 0) {
+                        // left right rotate
+                        Node r = p.R;
+                        int bal = p.R.bal;
+                        rotateLeft(p);
+                        rotateRight(f);
+                        f.bal = p.bal = r.bal = 0;
+                        if(bal == 1) p.bal = -1;
+                        else if (bal == -1) f.bal = 1;
+                    } else {
+                        rotateRight(f);
+                    }
+                }
+            }
+
+
         }
-        // Case bal = 0 does not change anything
     }
 
 
